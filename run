@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+gcc -o imgv main.c -Wall -Wextra -pedantic -ggdb -lraylib -lm && ./imgv $@
