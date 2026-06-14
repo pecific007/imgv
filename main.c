@@ -1,4 +1,3 @@
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +12,7 @@ typedef struct {
 
 void CenterCameraOnTux(Camera2D *camera, Texture2D Tux);
 void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux);
-void DoActionOnInput_Mouse(Camera2D *camera, Texture2D Tux);
+void DoActionOnInput_Mouse(Camera2D *camera);
 
 CamDefault CameraDefault = {
     .default_offset = { 0 },
@@ -27,7 +26,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <IMAGE.png>\n", argv[0]);
-        fprintf(stderr, "Please provide an image.");
+        fprintf(stderr, "Please provide an image.\n");
         return 1;
     }
     const int ScreenWidth = 1280;
@@ -36,7 +35,7 @@ int main(int argc, char **argv)
     char *Title = (char *)malloc(sizeof(char) * MAX_TITLE_SIZE);
 
 
-    int ArgLen = strlen(argv[1]);
+    unsigned int ArgLen = strlen(argv[1]);
     if (ArgLen > MAX_TITLE_SIZE) {
         fprintf(stderr, "File name is too big.\n");
         return 1;
@@ -59,14 +58,16 @@ int main(int argc, char **argv)
         while (!WindowShouldClose()) {
             BeginDrawing();
                 DoActionOnInput_KeyBoard(&camera, Tux);
-                DoActionOnInput_Mouse(&camera, Tux);
+                DoActionOnInput_Mouse(&camera);
                 ClearBackground(BLACK);
                 BeginMode2D(camera);
                     DrawTexture(Tux, 0, 0, WHITE);
                 EndMode2D();
-                DrawTextEx(JBMono50, Title, (Vector2) { .x = 10, .y = 10}, 50.0, 1, BLACK);
+                DrawTextEx(JBMono50, Title, (Vector2) { .x = 10, .y = 10}, 50.0, 1, WHITE);
             EndDrawing();
         }
+    UnloadTexture(Tux);
+    UnloadFont(JBMono50);
     CloseWindow();
     return 0;
 }
@@ -74,17 +75,18 @@ int main(int argc, char **argv)
 void CenterCameraOnTux(Camera2D *camera, Texture2D Tux)
 {
     camera->offset = (Vector2) {
-        .x = GetScreenWidth()/2.0,
-        .y = GetScreenHeight()/2.0,
+        .x = GetScreenWidth() /2.0f,
+        .y = GetScreenHeight()/2.0f,
     };
     camera->target = (Vector2) {
-        .x = Tux.width /2.0 ,
-        .y = Tux.height/2.0
+        .x = Tux.width /2.0f,
+        .y = Tux.height/2.0f,
     };
 }
 
-void DoActionOnInput_Mouse(Camera2D *camera, Texture2D Tux)
+void DoActionOnInput_Mouse(Camera2D *camera)
 {
+    // ---------- MOUSE ACTINOS ---------- //
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
         Vector2 delta = GetMouseDelta();
         delta = Vector2Scale(delta, -1.0/camera->zoom);
@@ -106,6 +108,8 @@ void DoActionOnInput_Mouse(Camera2D *camera, Texture2D Tux)
 void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux)
 {
     // ---------- KEYBOARD ACTINOS ---------- //
+    const float zoom_factor = 0.02f;
+    const float move_factor = 10.0f;
     if (CenteredTuxOnStartup == 2) {
         CenterCameraOnTux(camera, Tux);
         CenteredTuxOnStartup = 5;
@@ -117,4 +121,18 @@ void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux)
         camera->zoom = 1.0f;
         CenterCameraOnTux(camera, Tux);
     }
+    if (IsKeyDown(KEY_C))
+        CenterCameraOnTux(camera, Tux);
+    if (IsKeyDown(KEY_H))
+        camera->offset.x -= move_factor;
+    if (IsKeyDown(KEY_J))
+        camera->offset.y += move_factor;
+    if (IsKeyDown(KEY_K))
+        camera->offset.y -= move_factor;
+    if (IsKeyDown(KEY_L))
+        camera->offset.x += move_factor;
+    if (IsKeyDown(KEY_U) || IsKeyDown(KEY_MINUS))
+        camera->zoom = Clamp(expf(logf(camera->zoom)-zoom_factor), 0.125, 64.0);
+    if (IsKeyDown(KEY_I) || IsKeyDown(KEY_EQUAL))
+        camera->zoom = Clamp(expf(logf(camera->zoom)+zoom_factor), 0.125, 64.0);
 }
