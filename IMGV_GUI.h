@@ -3,6 +3,7 @@
 #ifndef IMGV_GUI_H
 #define IMGV_GUI_H
 
+#include <stdio.h>
 #include <raylib.h>
 
 typedef enum {
@@ -34,8 +35,14 @@ IMGV_GUI_BTN CreateGUIButton(const char *text,
     Vector2 pos, Vector2 padding, Color BtnColor,
     Color TextColor, Font font, BTN_Kind BtnType);
 void DrawGUIButton(IMGV_GUI_BTN Button);
+bool IMGVGUIButtonPressed(IMGV_GUI_BTN Button);
+bool IMGV_GUI_ButtonHover(IMGV_GUI_BTN Button);
+bool IMGV_GUI_ButtonPressed(IMGV_GUI_BTN Button, MouseButton click);
+
 
 #endif // IMGV_GUI_H
+
+// #define IMGV_GUI_IMPLEMENTATION
 
 #ifdef IMGV_GUI_IMPLEMENTATION
 
@@ -76,6 +83,30 @@ void DrawGUIButton(IMGV_GUI_BTN Button)
         Button.BTN_Text.Font.baseSize,
         1, Button.BTN_Text.Color);
     return;
+}
+    // printf("\n%i %f %f\n", (MousePos.y >= (Button.BTN_Pos.y + Button.BTN_Size.y)), (Button.BTN_Pos.y + Button.BTN_Size.y), GetMousePosition().y);
+    // ^ for debugging
+
+bool IMGV_GUI_ButtonHover(IMGV_GUI_BTN Button)
+{
+    Vector2 MousePos = GetMousePosition();
+    if (MousePos.y >= Button.BTN_Pos.y
+        && MousePos.y <= (Button.BTN_Pos.y + Button.BTN_Size.y)
+        && MousePos.x >= Button.BTN_Pos.x
+        && MousePos.x <= (Button.BTN_Pos.x + Button.BTN_Size.x)
+    ) {
+        return true;
+    }
+    return false;
+}
+
+bool IMGV_GUI_ButtonPressed(IMGV_GUI_BTN Button, MouseButton click)
+{
+    if (!IMGV_GUI_ButtonHover(Button)) return false;
+    if (IsMouseButtonDown(click)) {
+        return true;
+    }
+    return false;
 }
 
 #endif // IMGV_GUI_IMPLEMENTATION

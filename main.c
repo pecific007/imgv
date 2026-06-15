@@ -3,6 +3,7 @@
 #include <string.h>
 #include <raylib.h>
 #include <raymath.h>
+
 #define IMGV_GUI_IMPLEMENTATION
 #include "./IMGV_GUI.h"
 
@@ -18,6 +19,7 @@ void DoActionOnInput_Mouse(Camera2D *camera);
 void ShowHelpGui(LoadedFonts fonts);
 
 bool StateShowHelpMenu = true;
+bool StateProgramRunning    = true;
 
 int main(int argc, char **argv)
 {
@@ -62,6 +64,10 @@ int main(int argc, char **argv)
                 DoActionOnInput_KeyBoard(&camera, Tux);
                 DoActionOnInput_Mouse(&camera);
                 ClearBackground(BLACK);
+                if (!StateProgramRunning) {
+                    EndDrawing();
+                    goto close_prog;
+                }
                 if (IsKeyPressed(KEY_F1))
                     StateShowHelpMenu = !StateShowHelpMenu;
                 if (StateShowHelpMenu) {
@@ -73,6 +79,8 @@ int main(int argc, char **argv)
                 }
             EndDrawing();
         }
+
+close_prog:
     UnloadTexture(Tux);
     UnloadFont(fonts.Size30);
     UnloadFont(fonts.Size50);
@@ -142,7 +150,19 @@ void ShowHelpGui(LoadedFonts fonts)
     IMGV_GUI_BTN ContinueBtn =  CreateGUIButton("Continue",
         (Vector2) { .x = BUTTON_RIGHT_X(BtnPadding.x, 10, "Continue", fonts.Size30), .y = BtnBottomY },
         BtnPadding, BtnColor, BtnTextColor, fonts.Size30, BTN_CONT);
+    if (IMGV_GUI_ButtonHover(QuitBtn)) {
+        QuitBtn.BTN_Color = BLUE;
+    }
+    if (IMGV_GUI_ButtonPressed(QuitBtn, MOUSE_BUTTON_LEFT)) {
+        StateProgramRunning = false;
+    }
     DrawGUIButton(QuitBtn);
+    if (IMGV_GUI_ButtonHover(ContinueBtn)) {
+        ContinueBtn.BTN_Color = BLUE;
+    }
+    if (IMGV_GUI_ButtonPressed(ContinueBtn, MOUSE_BUTTON_LEFT)) {
+        StateShowHelpMenu = false;
+    }
     DrawGUIButton(ContinueBtn);
     return;
 }
