@@ -40,7 +40,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           gcc main.c -Iraylib/src -Lraylib/src -lraylib \
-          -lm -ldl -lpthread -lX11 -o imgv
+          -lm -ldl -lpthread -o imgv
 
       - name: Build IMGV (Windows)
         if: runner.os == 'Windows'
