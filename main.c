@@ -183,7 +183,7 @@ void DrawSettingsPanel(int width, int height, LoadedFonts fonts)
         .y = 50.0f,
     };
     Vector2 BtnPadding = {
-        .x = width/4.0,
+        .x = width/8.0,
         .y = 5.0f,
     };
     Color BtnColor  = RED;
@@ -198,6 +198,11 @@ void DrawSettingsPanel(int width, int height, LoadedFonts fonts)
             .x = BtnPos.x - (GetBtnSize("Help", BtnPadding, Size30).x/2.0),
             .y = BtnPos.y
         }, BtnPadding, BtnColor, WHITE, Size30);
+    BtnPos.y += gap;
+    IMGV_GUI_BTN ShowOverlay = CreateGUIButton("Show Overlay", (Vector2){
+            .x = BtnPos.x - (GetBtnSize("Show Overlay", BtnPadding, Size30).x/2.0),
+            .y = BtnPos.y
+        }, BtnPadding, RED, WHITE, Size30);
 
     DrawRectangle(0, 0, width, height, RAYWHITE);
     if (IMGV_GUI_ButtonHover(QuitBtn)) {
@@ -214,6 +219,13 @@ void DrawSettingsPanel(int width, int height, LoadedFonts fonts)
         HelpBtn.BTN_Color = BLUE;
     }
     DrawGUIButton(HelpBtn);
+    if (IMGV_GUI_ButtonPressed(ShowOverlay, MOUSE_BUTTON_LEFT)) {
+        StateOvelayButtons = !StateOvelayButtons;
+    }
+    if (IMGV_GUI_ButtonHover(ShowOverlay)) {
+        ShowOverlay.BTN_Color = BLUE;
+    }
+    DrawGUIButton(ShowOverlay);
     DrawRectangleLines(0, 0, width, height, RED);
     return;
 }
@@ -222,6 +234,13 @@ void DrawOverlayGUI(LoadedFonts fonts)
 {
     DrawExpandWidget("Settings", (Vector2) { .x = 0, .y = 10 },
         GetScreenWidth()/4, GetScreenHeight(), &StateShowSettings, fonts, DrawSettingsPanel);
+    if (StateOvelayButtons) {
+        DrawTextEx(
+            fonts.Size90,
+            "OVERLAY",
+            (Vector2) { .x = 500, .y = 500, },
+            90, 1, RED);
+    }
     return;
 }
 
@@ -263,6 +282,9 @@ void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux)
     // Expand/Collapse settings pannel
     if (IsKeyPressed(KEY_S))
         StateShowSettings = !StateShowSettings;
+
+    if (IsKeyPressed(KEY_O))
+        StateOvelayButtons = !StateOvelayButtons;
 
     // Left/right
     if (IsKeyDown(KEY_H))
