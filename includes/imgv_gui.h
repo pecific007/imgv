@@ -26,6 +26,12 @@ typedef struct {
     IMGV_BTN_TEXT BTN_Text;
 } IMGV_GUI_BTN;
 
+typedef struct {
+    Font Size30;
+    Font Size50;
+    Font Size90;
+} LoadedFonts;
+
 IMGV_GUI_BTN CreateGUIButton(const char *text,
     Vector2 pos, Vector2 padding, Color BtnColor,
     Color TextColor, Font font);
@@ -33,12 +39,13 @@ void DrawGUIButton(IMGV_GUI_BTN Button);
 bool IMGVGUIButtonPressed(IMGV_GUI_BTN Button);
 bool IMGV_GUI_ButtonHover(IMGV_GUI_BTN Button);
 bool IMGV_GUI_ButtonPressed(IMGV_GUI_BTN Button, MouseButton click);
+bool IMGV_GUI_ButtonDown(IMGV_GUI_BTN Button, MouseButton click);
 Vector2 GetBtnSize(const char *text, Vector2 padding, Font font);
-
+void DrawExpandWidget(const char *PanelName, Vector2 pos, int width, int height, bool *State, LoadedFonts font, void (*f)(int, int, LoadedFonts));
 
 #endif // IMGV_GUI_H
 
-// #define IMGV_GUI_IMPLEMENTATION
+#define IMGV_GUI_IMPLEMENTATION // For debugging/developing
 
 #ifdef IMGV_GUI_IMPLEMENTATION
 
@@ -102,12 +109,83 @@ bool IMGV_GUI_ButtonPressed(IMGV_GUI_BTN Button, MouseButton click)
     return false;
 }
 
+bool IMGV_GUI_ButtonDown(IMGV_GUI_BTN Button, MouseButton click)
+{
+    if (!IMGV_GUI_ButtonHover(Button)) return false;
+    if (IsMouseButtonPressed(click)) {
+        return true;
+    }
+    return false;
+}
+
 inline Vector2 GetBtnSize(const char *text, Vector2 padding, Font font)
 {
     return (Vector2) {
         .x = (padding.x + MeasureTextEx(font, text, font.baseSize, 1).x + padding.x),
         .y = (padding.y + font.baseSize + padding.y),
     };
+}
+
+// Passing functions as parameters from:
+// https://stackoverflow.com/questions/9410/how-do-you-pass-a-function-as-a-parameter-in-c
+void DrawExpandWidget(const char *PanelName, Vector2 pos, int width, int height, bool *State, LoadedFonts font, void (*f)(int, int, LoadedFonts))
+{
+    Vector2 WidgetPadding = {
+        .x = 5.0f,
+        .y = 5.0f,
+    };
+    Vector2 ToolTipPadding = {
+        .x = 15.0f,
+        .y = 5.0f,
+    };
+
+    IMGV_GUI_BTN WidgetBtn = CreateGUIButton(">", pos, WidgetPadding, WHITE, RED, font.Size30);
+    IMGV_GUI_BTN ToolTip = CreateGUIButton(TextFormat("Expand %s", PanelName),
+        (Vector2) {
+            .x = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Size.x + 10,
+            .y = WidgetBtn.BTN_Pos.y,
+        }, ToolTipPadding, WHITE, RED, font.Size30);
+
+
+    if (!(*State)) {
+        DrawGUIButton(WidgetBtn);
+        if (IMGV_GUI_ButtonHover(WidgetBtn)) {
+            DrawGUIButton(ToolTip);
+            DrawRectangleLines(ToolTip.BTN_Pos.x, ToolTip.BTN_Pos.y,
+                ToolTip.BTN_Size.x,
+                ToolTip.BTN_Size.y, RED);
+        }
+        if (IMGV_GUI_ButtonPressed(WidgetBtn, MOUSE_BUTTON_LEFT)) {
+            *State = true;
+        }
+        DrawRectangleLines(WidgetBtn.BTN_Pos.x, WidgetBtn.BTN_Pos.y,
+            WidgetBtn.BTN_Size.x,
+            WidgetBtn.BTN_Size.y, RED);
+    } else {
+        (*f)(width, height, font);
+        WidgetBtn.BTN_Pos.x = width;
+        WidgetBtn.BTN_Text.Text = "<";
+        WidgetBtn.BTN_Text.Pos.x = WidgetBtn.BTN_Padding.x + WidgetBtn.BTN_Pos.x;
+
+        ToolTip.BTN_Pos.x      = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Size.x + 10;
+        ToolTip.BTN_Text.Text  = TextFormat("Collapse %s", PanelName);
+        ToolTip.BTN_Size.x     = GetBtnSize(TextFormat("Collapse %s", PanelName), ToolTipPadding, font.Size30).x;
+        ToolTip.BTN_Text.Pos.x = ToolTip.BTN_Padding.x + ToolTip.BTN_Pos.x;
+
+        DrawGUIButton(WidgetBtn);
+        if (IMGV_GUI_ButtonHover(WidgetBtn)) {
+            DrawGUIButton(ToolTip);
+            DrawRectangleLines(ToolTip.BTN_Pos.x, ToolTip.BTN_Pos.y,
+                ToolTip.BTN_Size.x,
+                ToolTip.BTN_Size.y, RED);
+        }
+        if (IMGV_GUI_ButtonPressed(WidgetBtn, MOUSE_BUTTON_LEFT)) {
+            *State= false;
+        }
+        DrawRectangleLines(WidgetBtn.BTN_Pos.x, WidgetBtn.BTN_Pos.y,
+            WidgetBtn.BTN_Size.x,
+            WidgetBtn.BTN_Size.y, RED);
+    }
 }
 
 #endif // IMGV_GUI_IMPLEMENTATION

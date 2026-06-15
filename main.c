@@ -7,22 +7,17 @@
 #define IMGV_GUI_IMPLEMENTATION
 #include "./includes/imgv_gui.h"
 
-typedef struct {
-    Font Size30;
-    Font Size50;
-    Font Size90;
-} LoadedFonts;
-
 void CenterCameraOnTux(Camera2D *camera, Texture2D Tux);
 void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux);
 void DoActionOnInput_Mouse(Camera2D *camera);
 void ShowHelpGui(LoadedFonts fonts);
 void DrawOverlayGUI(LoadedFonts fonts);
-void DrawSettingsPanel(LoadedFonts fonts, const int width);
+void DrawSettingsPanel(int width, int height, LoadedFonts fonts);
 
 // States
 bool StateShowHelpMenu      = true;
 bool StateShowSettings      = false;
+bool StateOvelayButtons     = false;
 bool StateProgramRunning    = true;
 
 int main(int argc, char **argv)
@@ -73,8 +68,6 @@ int main(int argc, char **argv)
 
         while (!WindowShouldClose()) {
             BeginDrawing();
-                DoActionOnInput_KeyBoard(&camera, Tux);
-                DoActionOnInput_Mouse(&camera);
                 ClearBackground(BLACK);
                 if (!StateProgramRunning) {
                     EndDrawing();
@@ -85,6 +78,8 @@ int main(int argc, char **argv)
                 if (StateShowHelpMenu) {
                     ShowHelpGui(fonts);
                 } else {
+                    DoActionOnInput_KeyBoard(&camera, Tux);
+                    DoActionOnInput_Mouse(&camera);
                     BeginMode2D(camera);
                         DrawTexture(Tux, 0, 0, WHITE);
                     EndMode2D();
@@ -181,72 +176,7 @@ void ShowHelpGui(LoadedFonts fonts)
     return;
 }
 
-void DrawOverlayGUI(LoadedFonts fonts)
-{
-    if (!StateShowSettings) {
-        IMGV_GUI_BTN ExpandSettings = CreateGUIButton(">", (Vector2) {
-            .x = 0,
-            .y = 10,
-        }, (Vector2) {
-            .x = 5,
-            .y = 5,
-        }, WHITE, RED, fonts.Size30);
-        IMGV_GUI_BTN ToolTip_expand = CreateGUIButton("Expand Settings", (Vector2) {
-            .x = ExpandSettings.BTN_Size.x + 10,
-            .y = 10,
-        }, (Vector2) {
-            .x = 15,
-            .y = 5,
-        }, WHITE, RED, fonts.Size30);
-        DrawGUIButton(ExpandSettings);
-        if (IMGV_GUI_ButtonHover(ExpandSettings)) {
-            DrawGUIButton(ToolTip_expand);
-            DrawRectangleLines(ToolTip_expand.BTN_Pos.x, ToolTip_expand.BTN_Pos.y,
-                ToolTip_expand.BTN_Size.x,
-                ToolTip_expand.BTN_Size.y, RED);
-        }
-        if (IMGV_GUI_ButtonPressed(ExpandSettings, MOUSE_BUTTON_LEFT)) {
-            StateShowSettings = true;
-        }
-        DrawRectangleLines(ExpandSettings.BTN_Pos.x, ExpandSettings.BTN_Pos.y,
-            ExpandSettings.BTN_Size.x,
-            ExpandSettings.BTN_Size.y, RED);
-    }
-    else {
-        const int width = GetScreenWidth() / 4;
-        DrawSettingsPanel(fonts, width);
-        IMGV_GUI_BTN CollapseSettings = CreateGUIButton("<", (Vector2) {
-            .x = width,
-            .y = 10,
-        }, (Vector2) {
-            .x = 5,
-            .y = 5,
-        }, WHITE, RED, fonts.Size30);
-        IMGV_GUI_BTN ToolTip_expand = CreateGUIButton("Collapse Settings", (Vector2) {
-            .x = CollapseSettings.BTN_Pos.x + CollapseSettings.BTN_Size.x + 10,
-            .y = 10,
-        }, (Vector2) {
-            .x = 15,
-            .y = 5,
-        }, WHITE, RED, fonts.Size30);
-        DrawGUIButton(CollapseSettings);
-        if (IMGV_GUI_ButtonHover(CollapseSettings)) {
-            DrawGUIButton(ToolTip_expand);
-            DrawRectangleLines(ToolTip_expand.BTN_Pos.x, ToolTip_expand.BTN_Pos.y,
-                ToolTip_expand.BTN_Size.x,
-                ToolTip_expand.BTN_Size.y, RED);
-        }
-        if (IMGV_GUI_ButtonPressed(CollapseSettings, MOUSE_BUTTON_LEFT)) {
-            StateShowSettings = false;
-        }
-        DrawRectangleLines(CollapseSettings.BTN_Pos.x, CollapseSettings.BTN_Pos.y,
-            CollapseSettings.BTN_Size.x,
-            CollapseSettings.BTN_Size.y, RED);
-    }
-    return;
-}
-
-void DrawSettingsPanel(LoadedFonts fonts, const int width)
+void DrawSettingsPanel(int width, int height, LoadedFonts fonts)
 {
     Vector2 BtnPos = {
         .x = width/2.0,
@@ -269,7 +199,7 @@ void DrawSettingsPanel(LoadedFonts fonts, const int width)
             .y = BtnPos.y
         }, BtnPadding, BtnColor, WHITE, Size30);
 
-    DrawRectangle(0, 0, width, GetScreenHeight(), RAYWHITE);
+    DrawRectangle(0, 0, width, height, RAYWHITE);
     if (IMGV_GUI_ButtonHover(QuitBtn)) {
         QuitBtn.BTN_Color = BLUE;
     }
@@ -284,9 +214,17 @@ void DrawSettingsPanel(LoadedFonts fonts, const int width)
         HelpBtn.BTN_Color = BLUE;
     }
     DrawGUIButton(HelpBtn);
-    DrawRectangleLines(0, 0, width, GetScreenHeight(), RED);
+    DrawRectangleLines(0, 0, width, height, RED);
     return;
 }
+
+void DrawOverlayGUI(LoadedFonts fonts)
+{
+    DrawExpandWidget("Settings", (Vector2) { .x = 0, .y = 10 },
+        GetScreenWidth()/4, GetScreenHeight(), &StateShowSettings, fonts, DrawSettingsPanel);
+    return;
+}
+
 
 void DoActionOnInput_Mouse(Camera2D *camera)
 {

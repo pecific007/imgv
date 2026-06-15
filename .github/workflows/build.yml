@@ -1,0 +1,51 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake xorg-dev
+
+      - name: Insall dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install make
+
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          install: mingw-w64-x86_64-gcc make
+
+      - name: Clone raylib
+        run: git clone https://github.com/raysan5/raylib.git
+
+      - name: Build raylib (Linux/macOs)
+        if: runner.os != 'Windows'
+        run: |
+          cd raylib/src
+          make PLATFORM=PLATFORM_DESKTOP
+
+      - name: Build IMGV (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          gcc main.c -Iraylib/src -Lraylib/src -lraylib \
+          -lm -ldl -lpthread -lGl -lrt -lX11 -o imgv
+
+      - name: Build IMGV (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          gcc main.c -Iraylib/src -Lraylib/src -lraylib \
+          -lopengl -lgdi32 -lwinmm -o imgv.exe
+
