@@ -27,7 +27,7 @@ jobs:
         with:
           install: >-
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-make
+            make
 
       - name: Clone raylib
         run: git clone https://github.com/raysan5/raylib.git
