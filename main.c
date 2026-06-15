@@ -5,7 +5,7 @@
 #include <raymath.h>
 
 #define IMGV_GUI_IMPLEMENTATION
-#include "./IMGV_GUI.h"
+#include "./includes/imgv_gui.h"
 
 typedef struct {
     Font Size30;
@@ -17,8 +17,12 @@ void CenterCameraOnTux(Camera2D *camera, Texture2D Tux);
 void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux);
 void DoActionOnInput_Mouse(Camera2D *camera);
 void ShowHelpGui(LoadedFonts fonts);
+void DrawOverlayGUI(LoadedFonts fonts);
+void DrawSettingsPanel(LoadedFonts fonts, const int width);
 
-bool StateShowHelpMenu = true;
+// States
+bool StateShowHelpMenu      = true;
+bool StateShowSettings      = false;
 bool StateProgramRunning    = true;
 
 int main(int argc, char **argv)
@@ -36,6 +40,14 @@ int main(int argc, char **argv)
     unsigned int ArgLen = strlen(argv[1]);
     if (ArgLen > MAX_TITLE_SIZE) {
         fprintf(stderr, "File name is too big.\n");
+        return 1;
+    }
+    if (argv[1][ArgLen-4] != '.'
+        || argv[1][ArgLen-3] != 'p'
+        || argv[1][ArgLen-2] != 'n'
+        || argv[1][ArgLen-1] != 'g'
+    ) {
+        fprintf(stderr, "File format not supported. Only `.png` images are supported at the moment.\n");
         return 1;
     }
     sprintf(Title, "IMGV - %s",argv[1]);
@@ -76,6 +88,7 @@ int main(int argc, char **argv)
                     BeginMode2D(camera);
                         DrawTexture(Tux, 0, 0, WHITE);
                     EndMode2D();
+                    DrawOverlayGUI(fonts);
                 }
             EndDrawing();
         }
@@ -111,6 +124,7 @@ void ShowHelpGui(LoadedFonts fonts)
 
     char *text[] = {
         "F1  : Open/Close this help menu",
+        "s   : Show/Hide settings panel",
         "0   : Reset zoom/movement",
         "l   : Move image right",
         "h   : Move image left",
@@ -133,7 +147,7 @@ void ShowHelpGui(LoadedFonts fonts)
     for (int i = 0; i < len; ++i) {
         DrawTextEx(fonts.Size30, text[i], (Vector2) {
             .x = Position.x,
-            .y = Position.y += 45,
+            .y = Position.y += 35,
         }, fonts.Size30.baseSize, 1, BLACK);
     }
     Vector2 BtnPadding = {
@@ -146,10 +160,10 @@ void ShowHelpGui(LoadedFonts fonts)
 
     IMGV_GUI_BTN QuitBtn = CreateGUIButton("Quit",
         (Vector2) { .x = 10, .y = BtnBottomY },
-        BtnPadding, BtnColor, BtnTextColor, fonts.Size30, BTN_QUIT);
+        BtnPadding, BtnColor, BtnTextColor, fonts.Size30);
     IMGV_GUI_BTN ContinueBtn =  CreateGUIButton("Continue",
         (Vector2) { .x = BUTTON_RIGHT_X(BtnPadding.x, 10, "Continue", fonts.Size30), .y = BtnBottomY },
-        BtnPadding, BtnColor, BtnTextColor, fonts.Size30, BTN_CONT);
+        BtnPadding, BtnColor, BtnTextColor, fonts.Size30);
     if (IMGV_GUI_ButtonHover(QuitBtn)) {
         QuitBtn.BTN_Color = BLUE;
     }
@@ -164,6 +178,113 @@ void ShowHelpGui(LoadedFonts fonts)
         StateShowHelpMenu = false;
     }
     DrawGUIButton(ContinueBtn);
+    return;
+}
+
+void DrawOverlayGUI(LoadedFonts fonts)
+{
+    if (!StateShowSettings) {
+        IMGV_GUI_BTN ExpandSettings = CreateGUIButton(">", (Vector2) {
+            .x = 0,
+            .y = 10,
+        }, (Vector2) {
+            .x = 5,
+            .y = 5,
+        }, WHITE, RED, fonts.Size30);
+        IMGV_GUI_BTN ToolTip_expand = CreateGUIButton("Expand Settings", (Vector2) {
+            .x = ExpandSettings.BTN_Size.x + 10,
+            .y = 10,
+        }, (Vector2) {
+            .x = 15,
+            .y = 5,
+        }, WHITE, RED, fonts.Size30);
+        DrawGUIButton(ExpandSettings);
+        if (IMGV_GUI_ButtonHover(ExpandSettings)) {
+            DrawGUIButton(ToolTip_expand);
+            DrawRectangleLines(ToolTip_expand.BTN_Pos.x, ToolTip_expand.BTN_Pos.y,
+                ToolTip_expand.BTN_Size.x,
+                ToolTip_expand.BTN_Size.y, RED);
+        }
+        if (IMGV_GUI_ButtonPressed(ExpandSettings, MOUSE_BUTTON_LEFT)) {
+            StateShowSettings = true;
+        }
+        DrawRectangleLines(ExpandSettings.BTN_Pos.x, ExpandSettings.BTN_Pos.y,
+            ExpandSettings.BTN_Size.x,
+            ExpandSettings.BTN_Size.y, RED);
+    }
+    else {
+        const int width = GetScreenWidth() / 4;
+        DrawSettingsPanel(fonts, width);
+        IMGV_GUI_BTN CollapseSettings = CreateGUIButton("<", (Vector2) {
+            .x = width,
+            .y = 10,
+        }, (Vector2) {
+            .x = 5,
+            .y = 5,
+        }, WHITE, RED, fonts.Size30);
+        IMGV_GUI_BTN ToolTip_expand = CreateGUIButton("Collapse Settings", (Vector2) {
+            .x = CollapseSettings.BTN_Pos.x + CollapseSettings.BTN_Size.x + 10,
+            .y = 10,
+        }, (Vector2) {
+            .x = 15,
+            .y = 5,
+        }, WHITE, RED, fonts.Size30);
+        DrawGUIButton(CollapseSettings);
+        if (IMGV_GUI_ButtonHover(CollapseSettings)) {
+            DrawGUIButton(ToolTip_expand);
+            DrawRectangleLines(ToolTip_expand.BTN_Pos.x, ToolTip_expand.BTN_Pos.y,
+                ToolTip_expand.BTN_Size.x,
+                ToolTip_expand.BTN_Size.y, RED);
+        }
+        if (IMGV_GUI_ButtonPressed(CollapseSettings, MOUSE_BUTTON_LEFT)) {
+            StateShowSettings = false;
+        }
+        DrawRectangleLines(CollapseSettings.BTN_Pos.x, CollapseSettings.BTN_Pos.y,
+            CollapseSettings.BTN_Size.x,
+            CollapseSettings.BTN_Size.y, RED);
+    }
+    return;
+}
+
+void DrawSettingsPanel(LoadedFonts fonts, const int width)
+{
+    Vector2 BtnPos = {
+        .x = width/2.0,
+        .y = 50.0f,
+    };
+    Vector2 BtnPadding = {
+        .x = width/4.0,
+        .y = 5.0f,
+    };
+    Color BtnColor  = RED;
+    Font Size30     = fonts.Size30;
+    const float gap = 20.0f + BtnPos.y;
+    IMGV_GUI_BTN QuitBtn = CreateGUIButton("Quit", (Vector2){
+        .x = BtnPos.x - (GetBtnSize("Quit", BtnPadding, Size30).x/2.0),
+        .y = BtnPos.y
+    }, BtnPadding, BtnColor, WHITE, Size30);
+    BtnPos.y += gap;
+    IMGV_GUI_BTN HelpBtn = CreateGUIButton("Help", (Vector2){
+            .x = BtnPos.x - (GetBtnSize("Help", BtnPadding, Size30).x/2.0),
+            .y = BtnPos.y
+        }, BtnPadding, BtnColor, WHITE, Size30);
+
+    DrawRectangle(0, 0, width, GetScreenHeight(), RAYWHITE);
+    if (IMGV_GUI_ButtonHover(QuitBtn)) {
+        QuitBtn.BTN_Color = BLUE;
+    }
+    if (IMGV_GUI_ButtonPressed(QuitBtn, MOUSE_BUTTON_LEFT)) {
+        StateProgramRunning = false;
+    }
+    DrawGUIButton(QuitBtn);
+    if (IMGV_GUI_ButtonPressed(HelpBtn, MOUSE_BUTTON_LEFT)) {
+        StateShowHelpMenu = true;
+    }
+    if (IMGV_GUI_ButtonHover(HelpBtn)) {
+        HelpBtn.BTN_Color = BLUE;
+    }
+    DrawGUIButton(HelpBtn);
+    DrawRectangleLines(0, 0, width, GetScreenHeight(), RED);
     return;
 }
 
@@ -200,6 +321,10 @@ void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux)
     }
     if (IsKeyDown(KEY_C))
         CenterCameraOnTux(camera, Tux);
+
+    // Expand/Collapse settings pannel
+    if (IsKeyPressed(KEY_S))
+        StateShowSettings = !StateShowSettings;
 
     // Left/right
     if (IsKeyDown(KEY_H))
