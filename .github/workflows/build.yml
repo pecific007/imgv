@@ -25,7 +25,9 @@ jobs:
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
-          install: mingw-w64-x86_64-gcc make
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
 
       - name: Clone raylib
         run: git clone https://github.com/raysan5/raylib.git
@@ -64,6 +66,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          gcc main.c -Iraylib/src -Lraylib/src -lraylib \
-          -lopengl -lgdi32 -lwinmm -o imgv.exe
+          gcc main.c -Iraylib/src -Lraylib/src \
+                -lraylib \
+                -lopengl32 \
+                -lgdi32 \
+                -lwinmm \
+                -o imgv.exe
 
