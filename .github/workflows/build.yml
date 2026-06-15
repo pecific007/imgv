@@ -36,11 +36,29 @@ jobs:
           cd raylib/src
           make PLATFORM=PLATFORM_DESKTOP
 
-      - name: Build IMGV (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Build raylib (Winodws)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          cd raylib/src
+          make PLATFORM=PLATFORM_DESKTOP
+
+      - name: Build IMGV (Linux)
+        if: runner.os == 'Linux'
         run: |
           gcc main.c -Iraylib/src -Lraylib/src -lraylib \
-          -lm -ldl -lpthread -o imgv
+            -lm -ldl -lpthread -lGL -lrt -lX11 \
+            -o imgv
+
+      - name: Build IMGV (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          gcc main.c -Iraylib/src -Lraylib/src -lraylib \
+            -framework OpenGL \
+            -framework Cocoa \
+            -framework IOKit \
+            -framework CoreVideo \
+            -o imgv
 
       - name: Build IMGV (Windows)
         if: runner.os == 'Windows'
