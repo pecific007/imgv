@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <raylib.h>
 #include <raymath.h>
@@ -14,12 +13,20 @@ void ShowHelpGui(LoadedFonts fonts);
 void DrawOverlayGUI(LoadedFonts fonts, Camera2D *camera);
 
 // States
+bool StateShowDropoff       = true;
+bool StateImageLoaded       = false;
 bool StateShowHelpMenu      = true;
 bool StateShowSettings      = false;
 bool StateShowZoomPanel     = false;
 bool StateShowMovePanel     = false;
 bool StateShowMovement      = false;
 bool StateProgramRunning    = true;
+
+typedef enum {
+    IMGV_INI,
+    IMGV_CMD,
+    IMGV_GUI,
+} IMGV_MODES;
 
 typedef enum {
     MOVE_UP,
@@ -59,33 +66,63 @@ void Zoom(Camera2D *camera, ZoomType zt) {
         camera->zoom = Clamp(expf(logf(camera->zoom)-zoom_factor), 0.125, 64.0);
 }
 
+void IMGV_LoadTux(Image *img, Texture2D *Tux, char *Path) {
+    *img = LoadImage(Path);
+    *Tux = LoadTextureFromImage(*img);
+}
+
+bool DrawDropOffScreen(Camera2D *camera, Image *img, Texture2D *Tux, FilePathList *fpl, Font font)
+{
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), RAYWHITE);
+    DrawTextEx(font, "Drop Image", (Vector2){
+            GetScreenWidth()/2.0f -
+            MeasureTextEx(font, "Drop Image",
+                font.baseSize, 1).x/2.0f,
+            GetScreenHeight()/2.0f - font.baseSize
+        },
+        font.baseSize, 1, LIGHTGRAY);
+    if (IsFileDropped()) {
+        *fpl = LoadDroppedFiles();
+        if (fpl->count > 0) {
+            IMGV_LoadTux(img, Tux, fpl->paths[0]);
+            StateImageLoaded = true;
+            CenterCameraOnTux(camera, *Tux);
+            return true;
+        }
+    }
+    return false;
+}
+
+
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <IMAGE.png>\n", argv[0]);
-        fprintf(stderr, "Please provide an image.\n");
-        return 1;
+    IMGV_MODES mode = IMGV_INI;
+    if (argc > 1) mode = IMGV_CMD; else mode = IMGV_GUI;
+    // mode = IMGV_CMD;
+
+    if (mode == IMGV_CMD) {
+        if (argc != 3 || argc == 2) {
+            fprintf(stderr, "Usage: %s -i <IMAGE.png>\n", argv[0]);
+            fprintf(stderr, "Please provide an image.\n");
+            return 1;
+        }
+        if (argc == 3 && strcmp(argv[1], "-i") != 0) {
+            fprintf(stderr, "Invalid flag.\n");
+            return 1;
+        }
+        StateShowDropoff = false;
     }
+
     const int ScreenWidth = 1280;
     const int ScreenHeight = 720;
     const unsigned int MAX_TITLE_SIZE = 100;
-    char *Title = (char *)malloc(sizeof(char) * MAX_TITLE_SIZE);
-
-    unsigned int ArgLen = strlen(argv[1]);
-    if (ArgLen > MAX_TITLE_SIZE) {
+    if (strlen(argv[2]) > MAX_TITLE_SIZE) {
         fprintf(stderr, "File name is too big.\n");
         return 1;
     }
-    if (argv[1][ArgLen-4] != '.'
-        || argv[1][ArgLen-3] != 'p'
-        || argv[1][ArgLen-2] != 'n'
-        || argv[1][ArgLen-1] != 'g'
-    ) {
-        fprintf(stderr, "File format not supported. Only `.png` images are supported at the moment.\n");
-        return 1;
-    }
-    sprintf(Title, "IMGV - %s",argv[1]);
-    // SetConfigFlags(FLAG_WINDOW_RESIZABLE); Doesn't work well with tilingWM
+    char *Title = "IMGV - Image Viewer";
+
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE); // Doesn't work well with tilingWM
 
     InitWindow(ScreenWidth, ScreenHeight, Title);
         SetTargetFPS(60);
@@ -98,20 +135,25 @@ int main(int argc, char **argv)
             .Size90 = LoadFontEx(FontFilePath, 90.0f, NULL, 0),
         };
 
-        Image img = LoadImage(argv[1]);
-        Texture2D Tux = LoadTextureFromImage(img);
-        UnloadImage(img);
+        FilePathList fpl = {0};
+        Image img = {0};
+        Texture2D Tux = {0};
         Camera2D camera = { 0 };
         camera.zoom = 1.0f;
-        CenterCameraOnTux(&camera, Tux);
-
         while (!WindowShouldClose()) {
             BeginDrawing();
-                ClearBackground(BLACK);
-                if (!StateProgramRunning) {
-                    EndDrawing();
-                    goto close_prog;
+                if (!StateImageLoaded && mode == IMGV_GUI) {
+                    if (DrawDropOffScreen(&camera, &img, &Tux, &fpl, fonts.Size90)) {
+                        StateImageLoaded = true;
+                    }
+                } else if (!StateImageLoaded && mode == IMGV_CMD) {
+                    IMGV_LoadTux(&img, &Tux, argv[2]);
+                    StateImageLoaded = true;
+                    CenterCameraOnTux(&camera, Tux);
                 }
+                ClearBackground(BLACK);
+                if (!StateProgramRunning)
+                    goto close_prog;
                 if (IsKeyPressed(KEY_F1))
                     StateShowHelpMenu = !StateShowHelpMenu;
                 if (StateShowHelpMenu) {
@@ -128,10 +170,11 @@ int main(int argc, char **argv)
         }
 
 close_prog:
-    UnloadTexture(Tux);
     UnloadFont(fonts.Size30);
     UnloadFont(fonts.Size50);
     UnloadFont(fonts.Size90);
+    UnloadTexture(Tux);
+    UnloadImage(img);
     CloseWindow();
     return 0;
 }
