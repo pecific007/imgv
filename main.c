@@ -12,7 +12,6 @@ void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux);
 void DoActionOnInput_Mouse(Camera2D *camera);
 void ShowHelpGui(LoadedFonts fonts);
 void DrawOverlayGUI(LoadedFonts fonts, Camera2D *camera);
-void DrawSettingsPanel(Vector2 pos, int width, int height, LoadedFonts fonts, void* other);
 
 // States
 bool StateShowHelpMenu      = true;
@@ -333,6 +332,7 @@ void DrawSettingsPanel(Vector2 pos, int width, int height, LoadedFonts fonts, vo
     DrawGUIButton(HelpBtn);
     if (IMGV_GUI_ButtonPressed(ShowOverlay, MOUSE_BUTTON_LEFT)) {
         StateShowZoomPanel = !StateShowZoomPanel;
+        StateShowMovePanel = !StateShowMovePanel;
     }
     if (IMGV_GUI_ButtonHover(ShowOverlay)) {
         ShowOverlay.BTN_Color = BLUE;

@@ -56,7 +56,7 @@ void DrawPanelWidgets(const char *PanelName, Vector2 WidgetPos, WIDGET_Orientati
 
 #endif // IMGV_GUI_H
 
-#define IMGV_GUI_IMPLEMENTATION // For debugging/developing
+// #define IMGV_GUI_IMPLEMENTATION // For debugging/developing
 
 #ifdef IMGV_GUI_IMPLEMENTATION
 
