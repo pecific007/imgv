@@ -236,17 +236,17 @@ void DoActionOnInput_KeyBoard(Camera2D *camera, Texture2D Tux)
         StateShowMovePanel = !StateShowMovePanel;
 
     // Left/right
-    if (IsKeyDown(KEY_H))
+    if (IsKeyDown(KEY_H) || IsKeyDown(KEY_LEFT))
         Move(camera, MOVE_LEFT);
 
-    if (IsKeyDown(KEY_L))
+    if (IsKeyDown(KEY_L) || IsKeyDown(KEY_RIGHT))
         Move(camera, MOVE_RIGHT);
 
     // Up/down
-    if (IsKeyDown(KEY_J))
+    if (IsKeyDown(KEY_J) || IsKeyDown(KEY_DOWN))
         Move(camera, MOVE_DOWN);
 
-    if (IsKeyDown(KEY_K))
+    if (IsKeyDown(KEY_K) || IsKeyDown(KEY_UP))
         Move(camera, MOVE_UP);
 
     // Zooming
