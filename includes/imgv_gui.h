@@ -32,6 +32,16 @@ typedef struct {
     Font Size90;
 } LoadedFonts;
 
+typedef enum {
+    WIDGET_LEFT,
+    WIDGET_RIGHT,
+} WIDGET_Orientation;
+
+typedef struct {
+    void    (*DrawFn) (Vector2, int, int, LoadedFonts, void*);
+    void    *OtherData;
+} PanelData;
+
 IMGV_GUI_BTN CreateGUIButton(const char *text,
     Vector2 pos, Vector2 padding, Color BtnColor,
     Color TextColor, Font font);
@@ -41,7 +51,8 @@ bool IMGV_GUI_ButtonHover(IMGV_GUI_BTN Button);
 bool IMGV_GUI_ButtonPressed(IMGV_GUI_BTN Button, MouseButton click);
 bool IMGV_GUI_ButtonDown(IMGV_GUI_BTN Button, MouseButton click);
 Vector2 GetBtnSize(const char *text, Vector2 padding, Font font);
-void DrawExpandWidget(const char *PanelName, Vector2 pos, int width, int height, bool *State, LoadedFonts font, void (*f)(int, int, LoadedFonts));
+void DrawPanelWidgets(const char *PanelName, Vector2 WidgetPos, WIDGET_Orientation ori,
+    int width, int height, bool *State, LoadedFonts font, PanelData Pdata);
 
 #endif // IMGV_GUI_H
 
@@ -112,7 +123,7 @@ bool IMGV_GUI_ButtonPressed(IMGV_GUI_BTN Button, MouseButton click)
 bool IMGV_GUI_ButtonDown(IMGV_GUI_BTN Button, MouseButton click)
 {
     if (!IMGV_GUI_ButtonHover(Button)) return false;
-    if (IsMouseButtonPressed(click)) {
+    if (IsMouseButtonDown(click)) {
         return true;
     }
     return false;
@@ -128,7 +139,8 @@ inline Vector2 GetBtnSize(const char *text, Vector2 padding, Font font)
 
 // Passing functions as parameters from:
 // https://stackoverflow.com/questions/9410/how-do-you-pass-a-function-as-a-parameter-in-c
-void DrawExpandWidget(const char *PanelName, Vector2 pos, int width, int height, bool *State, LoadedFonts font, void (*f)(int, int, LoadedFonts))
+void DrawPanelWidgets(const char *PanelName, Vector2 WidgetPos, WIDGET_Orientation ori,
+    int width, int height, bool *State, LoadedFonts font, PanelData Pdata)
 {
     Vector2 WidgetPadding = {
         .x = 5.0f,
@@ -138,14 +150,21 @@ void DrawExpandWidget(const char *PanelName, Vector2 pos, int width, int height,
         .x = 15.0f,
         .y = 5.0f,
     };
-
-    IMGV_GUI_BTN WidgetBtn = CreateGUIButton(">", pos, WidgetPadding, WHITE, RED, font.Size30);
+    IMGV_GUI_BTN WidgetBtn = CreateGUIButton(">", WidgetPos, WidgetPadding, WHITE, RED, font.Size30);
     IMGV_GUI_BTN ToolTip = CreateGUIButton(TextFormat("Expand %s", PanelName),
         (Vector2) {
             .x = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Size.x + 10,
             .y = WidgetBtn.BTN_Pos.y,
         }, ToolTipPadding, WHITE, RED, font.Size30);
 
+    if (ori == WIDGET_RIGHT) {
+        WidgetBtn.BTN_Text.Text = "<";
+        WidgetBtn.BTN_Pos.x = GetScreenWidth() - WidgetBtn.BTN_Size.x;
+        WidgetBtn.BTN_Text.Pos.x = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Padding.x;
+
+        ToolTip.BTN_Pos.x = WidgetBtn.BTN_Pos.x - 10 - GetBtnSize(ToolTip.BTN_Text.Text, ToolTip.BTN_Padding, ToolTip.BTN_Text.Font).x;
+        ToolTip.BTN_Text.Pos.x = ToolTip.BTN_Pos.x + ToolTip.BTN_Padding.x;
+    }
 
     if (!(*State)) {
         DrawGUIButton(WidgetBtn);
@@ -161,17 +180,37 @@ void DrawExpandWidget(const char *PanelName, Vector2 pos, int width, int height,
         DrawRectangleLines(WidgetBtn.BTN_Pos.x, WidgetBtn.BTN_Pos.y,
             WidgetBtn.BTN_Size.x,
             WidgetBtn.BTN_Size.y, RED);
+
     } else {
-        (*f)(width, height, font);
-        WidgetBtn.BTN_Pos.x = width;
-        WidgetBtn.BTN_Text.Text = "<";
-        WidgetBtn.BTN_Text.Pos.x = WidgetBtn.BTN_Padding.x + WidgetBtn.BTN_Pos.x;
+        Vector2 PanelPos = { .x = 0, .y = WidgetBtn.BTN_Pos.y };
+        if (ori == WIDGET_RIGHT) {
+            WidgetBtn.BTN_Text.Text = ">";
+            WidgetBtn.BTN_Pos.x = GetScreenWidth() - WidgetBtn.BTN_Size.x - width;
+            WidgetBtn.BTN_Text.Pos.x = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Padding.x;
 
-        ToolTip.BTN_Pos.x      = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Size.x + 10;
-        ToolTip.BTN_Text.Text  = TextFormat("Collapse %s", PanelName);
-        ToolTip.BTN_Size.x     = GetBtnSize(TextFormat("Collapse %s", PanelName), ToolTipPadding, font.Size30).x;
-        ToolTip.BTN_Text.Pos.x = ToolTip.BTN_Padding.x + ToolTip.BTN_Pos.x;
+            ToolTip.BTN_Text.Text  = TextFormat("Collapse %s", PanelName);
+            ToolTip.BTN_Size.x     = GetBtnSize(TextFormat("Collapse %s", PanelName), ToolTip.BTN_Padding, ToolTip.BTN_Text.Font).x;
+            ToolTip.BTN_Pos.x = WidgetBtn.BTN_Pos.x - 10;
+            ToolTip.BTN_Pos.x = WidgetBtn.BTN_Pos.x - 10 - GetBtnSize(ToolTip.BTN_Text.Text, ToolTip.BTN_Padding, ToolTip.BTN_Text.Font).x;
+            ToolTip.BTN_Text.Pos.x = ToolTip.BTN_Pos.x + ToolTip.BTN_Padding.x;
 
+            PanelPos.x = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Size.x;
+        } else {
+            WidgetBtn.BTN_Pos.x = width;
+            WidgetBtn.BTN_Text.Text = "<";
+            WidgetBtn.BTN_Text.Pos.x = WidgetBtn.BTN_Padding.x + WidgetBtn.BTN_Pos.x;
+
+            ToolTip.BTN_Text.Text  = TextFormat("Collapse %s", PanelName);
+            ToolTip.BTN_Size.x     = GetBtnSize(TextFormat("Collapse %s", PanelName), ToolTip.BTN_Padding, ToolTip.BTN_Text.Font).x;
+            ToolTip.BTN_Pos.x      = WidgetBtn.BTN_Pos.x + WidgetBtn.BTN_Size.x + 10;
+            ToolTip.BTN_Text.Pos.x = ToolTip.BTN_Padding.x + ToolTip.BTN_Pos.x;
+            PanelPos.x = WidgetBtn.BTN_Pos.x - width;
+        }
+        Pdata.DrawFn(PanelPos, width, height, font, Pdata.OtherData);
+
+        if (IMGV_GUI_ButtonPressed(WidgetBtn, MOUSE_BUTTON_LEFT)) {
+            *State = !*State;
+        }
         DrawGUIButton(WidgetBtn);
         if (IMGV_GUI_ButtonHover(WidgetBtn)) {
             DrawGUIButton(ToolTip);
@@ -179,9 +218,7 @@ void DrawExpandWidget(const char *PanelName, Vector2 pos, int width, int height,
                 ToolTip.BTN_Size.x,
                 ToolTip.BTN_Size.y, RED);
         }
-        if (IMGV_GUI_ButtonPressed(WidgetBtn, MOUSE_BUTTON_LEFT)) {
-            *State= false;
-        }
+
         DrawRectangleLines(WidgetBtn.BTN_Pos.x, WidgetBtn.BTN_Pos.y,
             WidgetBtn.BTN_Size.x,
             WidgetBtn.BTN_Size.y, RED);
