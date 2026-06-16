@@ -9,8 +9,14 @@ IMGV is a simple image viewer written in C using [raylib](https://github.com/ray
 IMGV Primarily focuses on keyboard based movement (specifically VIM movements) to pan around image.
 
 ### Usage:
-At the moment IMGV can only be used through command line.
+IMGV supports command line arguments and Drag and Drop functionalities.
+
+> [!NOTE]
+> The drag and drop feature doesn't work on wayland.
+
 ```Bash
 $ make
-$ ./imgv ~/path/to/image.png
+$ ./imgv -i ~/path/to/image.png  # Provide Image through command line.
+OR
+$ ./imgv  # Drag and drop image into the winodw.
 ```
